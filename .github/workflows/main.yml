@@ -1,0 +1,49 @@
+name: Node.js CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "16"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build container
+        run: |
+          docker build -t my-container .
+          docker images
+
+      - name: Run container
+        run: |
+          docker run -d -p 3000:3000 --name my-container-instance my-container
+          docker ps -a
+
+      - name: Wait for application to start
+        run: sleep 10
+
+      - name: Test application
+        run: |
+          response=$(curl -sS localhost:3000)
+          echo "Response: $response"
+          if [[ $response == *"Api is running..."* ]]; then
+            echo "Application is working correctly."
+          else
+            echo "Application is not responding as expected."
+            exit 1
+          fi
